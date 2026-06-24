@@ -70,8 +70,6 @@ NSString* UITraitsClassString;
 
     self.disableScroll = ![settings cordovaBoolSettingForKey:@"ScrollEnabled" defaultValue:NO];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(statusBarDidChangeFrame:) name: UIApplicationDidChangeStatusBarFrameNotification object:nil];
-
     self.keyboardResizes = ResizeNative;
     BOOL doesResize = [settings cordovaBoolSettingForKey:@"KeyboardResize" defaultValue:YES];
     if (!doesResize) {
@@ -120,12 +118,6 @@ NSString* UITraitsClassString;
         [nc removeObserver:self.webView name:UIKeyboardDidChangeFrameNotification object:nil];
     }
 }
-
--(void)statusBarDidChangeFrame:(NSNotification*)notification
-{
-    [self _updateFrame];
-}
-
 
 #pragma mark Keyboard events
 
@@ -214,8 +206,7 @@ NSString* UITraitsClassString;
 
 - (void)_updateFrame
 {
-    CGSize statusBarSize = [[UIApplication sharedApplication] statusBarFrame].size;
-    int statusBarHeight = MIN(statusBarSize.width, statusBarSize.height);
+    int statusBarHeight = [self currentStatusBarHeight];
     
     int _paddingBottom = (int)self.paddingBottom;
         
@@ -224,7 +215,8 @@ NSString* UITraitsClassString;
     }
     NSLog(@"CDVIonicKeyboard: updating frame");
     // NOTE: to handle split screen correctly, the application's window bounds must be used as opposed to the screen's bounds.
-    CGRect f = [[[[UIApplication sharedApplication] delegate] window] bounds];
+    UIWindow *window = [self keyboardWindow];
+    CGRect f = window ? window.bounds : self.webView.bounds;
     CGRect wf = self.webView.frame;
     switch (self.keyboardResizes) {
         case ResizeBody:
@@ -252,6 +244,62 @@ NSString* UITraitsClassString;
     [self resetScrollView];
 }
 
+- (UIWindow *)keyboardWindow
+{
+    if (self.webView.window != nil) {
+        return self.webView.window;
+    }
+
+    UIApplication *application = [UIApplication sharedApplication];
+    if (@available(iOS 13.0, *)) {
+        NSSet<UIScene *> *scenes = application.connectedScenes;
+        for (UIScene *scene in scenes) {
+            if (![scene isKindOfClass:[UIWindowScene class]]) {
+                continue;
+            }
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            if (windowScene.activationState != UISceneActivationStateForegroundActive &&
+                windowScene.activationState != UISceneActivationStateForegroundInactive) {
+                continue;
+            }
+            for (UIWindow *window in windowScene.windows) {
+                if (window.isKeyWindow) {
+                    return window;
+                }
+            }
+            if (windowScene.windows.count > 0) {
+                return windowScene.windows.firstObject;
+            }
+        }
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    if (application.keyWindow != nil) {
+        return application.keyWindow;
+    }
+#pragma clang diagnostic pop
+
+    id<UIApplicationDelegate> delegate = application.delegate;
+    if ([delegate respondsToSelector:@selector(window)]) {
+        return delegate.window;
+    }
+    return nil;
+}
+
+- (int)currentStatusBarHeight
+{
+    UIWindow *window = [self keyboardWindow];
+    if (@available(iOS 13.0, *)) {
+        UIStatusBarManager *statusBarManager = window.windowScene.statusBarManager;
+        if (statusBarManager != nil) {
+            CGSize statusBarSize = statusBarManager.statusBarFrame.size;
+            return (int)MIN(statusBarSize.width, statusBarSize.height);
+        }
+    }
+    return 0;
+}
+
 #pragma mark Keyboard Style
 
  - (void)setKeyboardStyle:(NSString*)style
@@ -264,26 +312,12 @@ NSString* UITraitsClassString;
     
     if (self.isWK) {
         for (NSString* classString in @[WKClassString, UITraitsClassString]) {
-            Class c = NSClassFromString(classString);
-            Method m = class_getInstanceMethod(c, @selector(keyboardAppearance));
-            
-            if (m != NULL) {
-                method_setImplementation(m, newImp);
-            } else {
-                class_addMethod(c, @selector(keyboardAppearance), newImp, "l@:");
-            }
+            [self applyKeyboardAppearanceImplementation:newImp toClassNamed:classString];
         }
     }
     else {
         for (NSString* classString in @[UIClassString, UITraitsClassString]) {
-            Class c = NSClassFromString(classString);
-            Method m = class_getInstanceMethod(c, @selector(keyboardAppearance));
-            
-            if (m != NULL) {
-                method_setImplementation(m, newImp);
-            } else {
-                class_addMethod(c, @selector(keyboardAppearance), newImp, "l@:");
-            }
+            [self applyKeyboardAppearanceImplementation:newImp toClassNamed:classString];
         }
     }
 
@@ -301,25 +335,58 @@ static IMP WKOriginalImp;
         return;
     }
 
-    Method UIMethod = class_getInstanceMethod(NSClassFromString(UIClassString), @selector(inputAccessoryView));
-    Method WKMethod = class_getInstanceMethod(NSClassFromString(WKClassString), @selector(inputAccessoryView));
+    Class UIClass = NSClassFromString(UIClassString);
+    Class WKClass = NSClassFromString(WKClassString);
+    Method UIMethod = UIClass ? class_getInstanceMethod(UIClass, @selector(inputAccessoryView)) : NULL;
+    Method WKMethod = WKClass ? class_getInstanceMethod(WKClass, @selector(inputAccessoryView)) : NULL;
 
     if (hideFormAccessoryBar) {
-        UIOriginalImp = method_getImplementation(UIMethod);
-        WKOriginalImp = method_getImplementation(WKMethod);
+        if (UIMethod != NULL) {
+            UIOriginalImp = method_getImplementation(UIMethod);
+        }
+        if (WKMethod != NULL) {
+            WKOriginalImp = method_getImplementation(WKMethod);
+        }
 
         IMP newImp = imp_implementationWithBlock(^(id _s) {
             return nil;
         });
 
-        method_setImplementation(UIMethod, newImp);
-        method_setImplementation(WKMethod, newImp);
+        if (UIMethod != NULL) {
+            method_setImplementation(UIMethod, newImp);
+        } else if (UIClass != Nil) {
+            class_addMethod(UIClass, @selector(inputAccessoryView), newImp, "@@:");
+        }
+
+        if (WKMethod != NULL) {
+            method_setImplementation(WKMethod, newImp);
+        } else if (WKClass != Nil) {
+            class_addMethod(WKClass, @selector(inputAccessoryView), newImp, "@@:");
+        }
     } else {
-        method_setImplementation(UIMethod, UIOriginalImp);
-        method_setImplementation(WKMethod, WKOriginalImp);
+        if (UIMethod != NULL && UIOriginalImp != NULL) {
+            method_setImplementation(UIMethod, UIOriginalImp);
+        }
+        if (WKMethod != NULL && WKOriginalImp != NULL) {
+            method_setImplementation(WKMethod, WKOriginalImp);
+        }
     }
 
     _hideFormAccessoryBar = hideFormAccessoryBar;
+}
+
+- (void)applyKeyboardAppearanceImplementation:(IMP)implementation toClassNamed:(NSString *)classString
+{
+    Class c = NSClassFromString(classString);
+    if (c == Nil) {
+        return;
+    }
+    Method m = class_getInstanceMethod(c, @selector(keyboardAppearance));
+    if (m != NULL) {
+        method_setImplementation(m, implementation);
+    } else {
+        class_addMethod(c, @selector(keyboardAppearance), implementation, "l@:");
+    }
 }
 
 #pragma mark scroll
