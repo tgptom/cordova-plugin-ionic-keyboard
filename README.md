@@ -1,9 +1,14 @@
 # cordova-plugin-ionic-keyboard
 
-This plugin has been designed to work seamlessly with `cordova-plugin-ionic-webview`, so make sure you have it installed first:
+This plugin is designed to work well with `cordova-plugin-ionic-webview`, but it is not installed automatically as a dependency. Install it separately if your app uses it:
 
  - https://github.com/ionic-team/cordova-plugin-ionic-webview
  - https://ionicframework.com/docs/wkwebview/
+
+## Platform Compatibility
+
+- `cordova-android` `>=15.0.0`
+- `cordova-ios` `>=8.0.0`
 
 ## Installation
 
