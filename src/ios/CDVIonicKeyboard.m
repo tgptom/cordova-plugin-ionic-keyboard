@@ -206,7 +206,7 @@ NSString* UITraitsClassString;
 
 - (void)_updateFrame
 {
-    int statusBarHeight = [self currentStatusBarHeight];
+    int statusBarHeight = (int)[self currentStatusBarHeight];
     
     int _paddingBottom = (int)self.paddingBottom;
         
@@ -216,7 +216,11 @@ NSString* UITraitsClassString;
     NSLog(@"CDVIonicKeyboard: updating frame");
     // NOTE: to handle split screen correctly, the application's window bounds must be used as opposed to the screen's bounds.
     UIWindow *window = [self keyboardWindow];
-    CGRect f = window ? window.bounds : self.webView.bounds;
+    if (window == nil) {
+        NSLog(@"CDVIonicKeyboard: keyboard window unavailable; skipping frame update");
+        return;
+    }
+    CGRect f = window.bounds;
     CGRect wf = self.webView.frame;
     switch (self.keyboardResizes) {
         case ResizeBody:
@@ -287,14 +291,17 @@ NSString* UITraitsClassString;
     return nil;
 }
 
-- (int)currentStatusBarHeight
+- (CGFloat)currentStatusBarHeight
 {
     UIWindow *window = [self keyboardWindow];
+    if (window == nil) {
+        return 0;
+    }
     if (@available(iOS 13.0, *)) {
         UIStatusBarManager *statusBarManager = window.windowScene.statusBarManager;
         if (statusBarManager != nil) {
             CGSize statusBarSize = statusBarManager.statusBarFrame.size;
-            return (int)MIN(statusBarSize.width, statusBarSize.height);
+            return MIN(statusBarSize.width, statusBarSize.height);
         }
     }
     return 0;
@@ -354,14 +361,10 @@ static IMP WKOriginalImp;
 
         if (UIMethod != NULL) {
             method_setImplementation(UIMethod, newImp);
-        } else if (UIClass != Nil) {
-            class_addMethod(UIClass, @selector(inputAccessoryView), newImp, "@@:");
         }
 
         if (WKMethod != NULL) {
             method_setImplementation(WKMethod, newImp);
-        } else if (WKClass != Nil) {
-            class_addMethod(WKClass, @selector(inputAccessoryView), newImp, "@@:");
         }
     } else {
         if (UIMethod != NULL && UIOriginalImp != NULL) {
@@ -378,7 +381,7 @@ static IMP WKOriginalImp;
 - (void)applyKeyboardAppearanceImplementation:(IMP)implementation toClassNamed:(NSString *)classString
 {
     Class c = NSClassFromString(classString);
-    if (c == Nil) {
+    if (c == nil) {
         return;
     }
     Method m = class_getInstanceMethod(c, @selector(keyboardAppearance));
