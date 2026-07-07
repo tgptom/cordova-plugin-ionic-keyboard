@@ -5,8 +5,8 @@
     <description>Ionic Keyboard Plugin</description>
     <license>Apache 2.0</license>
     <keywords>cordova,keyboard,ecosystem:cordova,cordova-ios,cordova-android</keywords>
-    <repo>https://github.com/ionic-team/cordova-plugin-ionic-keyboard.git</repo>
-    <issue>https://github.com/ionic-team/cordova-plugin-ionic-keyboard/issues</issue>
+    <repo>https://github.com/tgptom/cordova-plugin-ionic-keyboard.git</repo>
+    <issue>https://github.com/tgptom/cordova-plugin-ionic-keyboard/issues</issue>
     <author>Apache Software Foundation</author>
 
     <engines>

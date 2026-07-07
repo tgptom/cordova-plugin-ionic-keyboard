@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ionic-team/cordova-plugin-ionic-keyboard.git"
+    "url": "https://github.com/tgptom/cordova-plugin-ionic-keyboard.git"
   },
   "keywords": [
     "cordova",
@@ -25,9 +25,9 @@
   "author": "Apache Software Foundation",
   "license": "Apache 2.0",
   "bugs": {
-    "url": "https://github.com/ionic-team/cordova-plugin-ionic-keyboard/issues"
+    "url": "https://github.com/tgptom/cordova-plugin-ionic-keyboard/issues"
   },
-  "homepage": "https://github.com/ionic-team/cordova-plugin-ionic-keyboard#readme",
+  "homepage": "https://github.com/tgptom/cordova-plugin-ionic-keyboard#readme",
   "devDependencies": {
     "standard-version": "^7.0.0",
     "sync-cordova-xml2": "0.0.3"
