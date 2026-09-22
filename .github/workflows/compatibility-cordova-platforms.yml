@@ -70,7 +70,9 @@ jobs:
           cordova prepare ios
           IOS_SIMULATOR_TARGET="$(
             xcrun simctl list devices available -j | \
-              python -c "import json,re,sys; data=json.load(sys.stdin)['devices']; ios=[]; [ios.append(((int(m.group(1)), int(m.group(2))), d['name'])) for runtime, devices in data.items() for m in [re.search(r'iOS-(\\d+)-(\\d+)$', runtime)] if m for d in devices if d.get('isAvailable') and d.get('name','').startswith('iPhone ')]; print(sorted(ios, reverse=True)[0][1] if ios else (_ for _ in ()).throw(SystemExit('No available iPhone simulator found')))"
+              python -c "import json,re,sys; data=json.load(sys.stdin)['devices']; ios=[]; [ios.append(((int(m.group(1)), int(m.group(2))), d['name'], d['udid'])) for runtime, devices in data.items() for m in [re.search(r'iOS-(\\d+)-(\\d+)$', runtime)] if m for d in devices if d.get('isAvailable') and d.get('name','').startswith('iPhone ') and d.get('udid')]; print('|'.join(sorted(ios, reverse=True)[0][1:]) if ios else (_ for _ in ()).throw(SystemExit('No available iPhone simulator found')))"
           )"
-          echo "Using iOS simulator target: $IOS_SIMULATOR_TARGET"
-          cordova build ios --simulator --target="$IOS_SIMULATOR_TARGET" --no-sign --no-telemetry
+          IOS_SIMULATOR_NAME="${IOS_SIMULATOR_TARGET%|*}"
+          IOS_SIMULATOR_UDID="${IOS_SIMULATOR_TARGET#*|}"
+          echo "Using iOS simulator target: $IOS_SIMULATOR_NAME ($IOS_SIMULATOR_UDID)"
+          cordova build ios --simulator --no-sign --no-telemetry --buildFlag=-destination --buildFlag=id="$IOS_SIMULATOR_UDID"
