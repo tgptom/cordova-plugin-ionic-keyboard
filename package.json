@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-ionic-keyboard",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Ionic Keyboard Plugin",
   "scripts": {
     "release": "standard-version -a",

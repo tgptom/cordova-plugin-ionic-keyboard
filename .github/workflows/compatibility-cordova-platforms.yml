@@ -1,0 +1,68 @@
+name: Cordova Platform Compatibility
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  android-14:
+    name: Android (cordova-android@14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Cordova CLI
+        run: npm install --global cordova@12
+
+      - name: Build minimal Cordova Android app with plugin checkout
+        run: |
+          APP_DIR="$RUNNER_TEMP/cordova-android14-check"
+          rm -rf "$APP_DIR"
+          cordova create "$APP_DIR" com.example.keyboardcheck KeyboardCheckAndroid14
+          cd "$APP_DIR"
+          cordova platform add android@14
+          cordova plugin add "$GITHUB_WORKSPACE"
+          cordova prepare android
+          cordova build android --no-telemetry
+
+  ios-7:
+    name: iOS (cordova-ios@7)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Cordova CLI
+        run: npm install --global cordova@12
+
+      - name: Build minimal Cordova iOS app with plugin checkout
+        run: |
+          APP_DIR="$RUNNER_TEMP/cordova-ios7-check"
+          rm -rf "$APP_DIR"
+          cordova create "$APP_DIR" com.example.keyboardcheck KeyboardCheckIOS7
+          cd "$APP_DIR"
+          cordova platform add ios@7
+          cordova plugin add "$GITHUB_WORKSPACE"
+          cordova prepare ios
+          cordova build ios --simulator --no-sign --no-telemetry
