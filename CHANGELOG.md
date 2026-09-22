@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [2.3.0](https://github.com/tgptom/cordova-plugin-ionic-keyboard/compare/v2.2.0...v2.3.0) (2026-09-22)
+
+
+### Features
+
+* declare support for `cordova-android` 14 and `cordova-ios` 7
+* add CI compatibility validation builds for `cordova-android@14` and `cordova-ios@7`
+
+
 ## [2.2.0](https://github.com/tgptom/cordova-plugin-ionic-keyboard/compare/2.1.3...v2.2.0) (2019-09-03)
 
 

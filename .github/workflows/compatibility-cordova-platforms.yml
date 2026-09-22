@@ -1,0 +1,85 @@
+name: Cordova Platform Compatibility
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-14:
+    name: Android (cordova-android@14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Cordova CLI
+        run: npm install --global cordova@12
+
+      - name: Build minimal Cordova Android app with plugin checkout
+        run: |
+          APP_DIR="$RUNNER_TEMP/cordova-android14-check"
+          rm -rf "$APP_DIR"
+          cordova create "$APP_DIR" com.example.keyboardcheck KeyboardCheckAndroid14
+          cd "$APP_DIR"
+          cordova platform add android@14
+          cordova plugin add "$GITHUB_WORKSPACE"
+          cordova prepare android
+          cordova build android --no-telemetry
+
+  ios-7:
+    name: iOS (cordova-ios@7)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Cordova CLI
+        run: npm install --global cordova@12
+
+      - name: Build minimal Cordova iOS app with plugin checkout
+        run: |
+          APP_DIR="$RUNNER_TEMP/cordova-ios7-check"
+          rm -rf "$APP_DIR"
+          cordova create "$APP_DIR" com.example.keyboardcheck KeyboardCheckIOS7
+          cd "$APP_DIR"
+          cordova platform add ios@7
+          cordova plugin add "$GITHUB_WORKSPACE"
+          cordova prepare ios
+          IOS_SIMULATOR_TARGET="$(
+            xcrun simctl list devices available -j | \
+              python -c "import json,re,sys; data=json.load(sys.stdin)['devices']; ios=[]; [ios.append(((int(m.group(1)), int(m.group(2))), d['name'], d['udid'])) for runtime, devices in data.items() for m in [re.search(r'iOS-(\\d+)-(\\d+)$', runtime)] if m for d in devices if d.get('isAvailable') and d.get('name','').startswith('iPhone ') and d.get('udid')]; print('|'.join(sorted(ios, reverse=True)[0][1:]) if ios else (_ for _ in ()).throw(SystemExit('No available iPhone simulator found')))"
+          )"
+          IOS_SIMULATOR_NAME="${IOS_SIMULATOR_TARGET%|*}"
+          IOS_SIMULATOR_UDID="${IOS_SIMULATOR_TARGET#*|}"
+          echo "Using iOS simulator target: $IOS_SIMULATOR_NAME ($IOS_SIMULATOR_UDID)"
+          xcodebuild \
+            -workspace "platforms/ios/KeyboardCheckIOS7.xcworkspace" \
+            -scheme "KeyboardCheckIOS7" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "id=$IOS_SIMULATOR_UDID" \
+            build \
+            SYMROOT="$APP_DIR/platforms/ios/build"

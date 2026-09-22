@@ -7,8 +7,8 @@ This plugin is designed to work well with `cordova-plugin-ionic-webview`, but it
 
 ## Platform Compatibility
 
-- `cordova-android` `>=15.0.0`
-- `cordova-ios` `>=8.0.0`
+- `cordova-android` `>=14.0.0`
+- `cordova-ios` `>=7.0.0`
 
 ## Installation
 
