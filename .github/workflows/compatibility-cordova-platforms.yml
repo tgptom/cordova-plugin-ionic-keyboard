@@ -75,4 +75,11 @@ jobs:
           IOS_SIMULATOR_NAME="${IOS_SIMULATOR_TARGET%|*}"
           IOS_SIMULATOR_UDID="${IOS_SIMULATOR_TARGET#*|}"
           echo "Using iOS simulator target: $IOS_SIMULATOR_NAME ($IOS_SIMULATOR_UDID)"
-          cordova build ios --simulator --no-sign --no-telemetry --buildFlag=-destination --buildFlag=id="$IOS_SIMULATOR_UDID"
+          xcodebuild \
+            -workspace "platforms/ios/KeyboardCheckIOS7.xcworkspace" \
+            -scheme "KeyboardCheckIOS7" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "id=$IOS_SIMULATOR_UDID" \
+            build \
+            SYMROOT="$APP_DIR/platforms/ios/build"
